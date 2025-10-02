@@ -9,6 +9,7 @@
 
 #include "storage.h"
 
+#include <transmission-cpp.h>
 #include <Connection.h>
 
 #ifndef NOUN_TO_BYTES
