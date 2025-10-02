@@ -10,7 +10,8 @@ set(ION_LIB_SOURCE_DIR ${ION_LIB_DIR}/src)
 set(TRANSMISSION_LIB_SOURCE_DIR ${CMAKE_SOURCE_DIR}/libraries/transmission-cpp/src)
 include_directories(${ION_LIB_SOURCE_DIR} ${TRANSMISSION_LIB_SOURCE_DIR})
 file(GLOB_RECURSE ION_FILES ${ION_LIB_SOURCE_DIR}/*.cpp ${TRANSMISSION_LIB_SOURCE_DIR}/*.cpp)
-add_library(ion-cpp STATIC ${ION_FILES})
+add_library(ion-cpp STATIC ${ION_FILES}
+  src/ion-cpp.h)
 
 target_include_directories(ion-cpp PUBLIC ${ION_LIB_SOURCE_DIR} ${TRANSMISSION_LIB_SOURCE_DIR})
 
