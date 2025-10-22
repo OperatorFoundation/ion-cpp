@@ -228,7 +228,8 @@ varint expand_int_from_bytes(const bytes &bytes)
     {
       if(index == integers.size() - 1)
       {
-        integers.at(index) = static_cast<int>((static_cast<unsigned int>(integers.at(index)) << 8) | static_cast<unsigned int>(bytes.at(count - 1)));
+        // FIX: Cast to unsigned char first to prevent sign extension
+        integers.at(index) = static_cast<int>((static_cast<unsigned int>(integers.at(index)) << 8) | static_cast<unsigned char>(bytes.at(count - 1)));
       }
       else
       {
