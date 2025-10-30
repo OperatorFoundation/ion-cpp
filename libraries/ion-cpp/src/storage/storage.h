@@ -58,6 +58,7 @@ class NounType
     static constexpr int MONADIC_EFFECT = 31;
     static constexpr int DYADIC_EFFECT = 32;
     static constexpr int CONJUNCTION = 33;
+    static constexpr int DATA = 34;
     static constexpr int ANY = 255;
 };
 
