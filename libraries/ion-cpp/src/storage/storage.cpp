@@ -173,7 +173,7 @@ int Storage::truth() const
   }
 }
 
-void Storage::print() // NOLINT
+void Storage::print() const // NOLINT
 {
   switch(t)
   {

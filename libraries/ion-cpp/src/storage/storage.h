@@ -98,7 +98,7 @@ class Storage
     Storage(const Storage& x) = default; // o(x.o), t(x.t), i(x.i)
 
     [[nodiscard]] int truth() const;
-    void print();
+    void print() const;
 };
 
 template<>
