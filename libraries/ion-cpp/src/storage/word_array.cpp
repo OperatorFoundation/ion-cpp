@@ -65,7 +65,7 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
 {
   if(logger) logger->debugf("WordArray::from_conn(): objectType: %d", objectType);
 
-  varint varsize = expand_conn(conn); // NOLINT
+  varint varsize = expand_conn(conn, logger); // NOLINT
   if(std::holds_alternative<int>(varsize))
   {
     const int size = std::get<int>(varsize);
