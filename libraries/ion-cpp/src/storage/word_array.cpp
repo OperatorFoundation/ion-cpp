@@ -65,12 +65,12 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
 {
   if(logger) logger->debugf("WordArray::from_conn(): objectType: %d", objectType);
 
-  varint varsize = expand_conn(conn, logger); // NOLINT
+  varint varsize = expand_conn(conn, nullptr); // NOLINT
   if(std::holds_alternative<int>(varsize))
   {
     const int size = std::get<int>(varsize);
 
-    if(logger) logger->debugf("WordArray::from_conn(): size: %d", size);
+    if(logger) logger->debugf("WordArray::from_conn(): size of words: %d", size);
 
     auto i = ints();
 
@@ -95,6 +95,7 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
   }
   else
   {
+    if(logger) logger->debug("WordArray::from_conn(): bigint found as size of list");
     // Varint sizes not yet fully implemented
     return std::nullopt;
   }
