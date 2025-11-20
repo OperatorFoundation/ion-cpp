@@ -23,6 +23,8 @@ bytes squeeze_int(int value)
     return r;
   }
 
+  unsigned int uvalue;
+
   // Remember if the integer was positive or negative. If negative, we will make the length negative later.
   // Regardless, we end up with a positive integer for encoding.
   // Positive integers are more straightforward to encode.
@@ -30,16 +32,20 @@ bytes squeeze_int(int value)
   if(value < 0)
   {
     negative = 1;
-    value = -value;
+    uvalue = static_cast<unsigned int>(-(static_cast<long long>(value)));
+  }
+  else
+  {
+    uvalue = static_cast<unsigned int>(value);
   }
 
   // Determine how many bytes we need to encode the integer by removing zero bytes from the top end.
   // Note that this algorithm does not care about endianness and accommodates any word size.
-  while(value != 0)
+  while(uvalue != 0)
   {
     // Get each byte of the integer separately so that we can count how many bytes we need.
-    r.insert(r.begin(), static_cast<char>(value & 0xFF));
-    value = value >> 8;
+    r.insert(r.begin(), static_cast<char>(uvalue & 0xFF));
+    uvalue = uvalue >> 8;
   }
 
   char length = static_cast<char>(r.size());
@@ -119,7 +125,7 @@ std::tuple<varint, bytes> expand_int(bytes value)
   }
 
   // The first byte of the input array is the length at the beginning of the array with the integer for us to parse, the rest of the array is extra
-  int integerLength = static_cast<unsigned char>(value.front());
+  unsigned char integerLength = static_cast<unsigned char>(value.front());
 
   // The only case where the length can be zero is for the number 0.
   if(integerLength == 0)
@@ -165,7 +171,7 @@ std::tuple<varint, bytes> expand_int(bytes value)
 
 varint expand_conn(Connection& conn)
 {
-  int length = static_cast<unsigned char>(conn.readOne());
+  unsigned char length = static_cast<unsigned char>(conn.readOne());
 
   if(length == 0)
   {
@@ -212,50 +218,50 @@ varint expand_conn(Connection& conn)
 
 varint expand_int_from_bytes(const bytes &bytes)
 {
-  // We have to use an unsigned int here because in the base that we end up with a bigint, all the limbs should be unsigned.
-  // If we use a (signed) int, we will lose the top bit.
-  auto integers = ints();
+  auto integers = std::vector<unsigned int>();  // Changed to unsigned
+
   for(int count = 1; count <= bytes.size(); count++)
   {
-    // We ran out of bytes in the queued integers
-    if(count % sizeof(int) == 1)
+    if(count % sizeof(unsigned int) == 1)
     {
       integers.insert(integers.begin(), 0);
     }
 
-    // Shift all the integers one byte left
     for(int index = 0; index < static_cast<int>(integers.size()); index++)
     {
       if(index == integers.size() - 1)
       {
-        // FIX: Cast to unsigned char first to prevent sign extension
-        integers.at(index) = static_cast<int>((static_cast<unsigned int>(integers.at(index)) << 8) | static_cast<unsigned char>(bytes.at(count - 1)));
+        integers.at(index) = (integers.at(index) << 8) | static_cast<unsigned char>(bytes.at(count - 1));
       }
       else
       {
-        const auto current = static_cast<unsigned int>(integers.at(index));
-        const auto next = static_cast<unsigned int>(integers.at(index + 1));
-
-        constexpr int shift = (sizeof(int) - 1) * 8;
+        const auto current = integers.at(index);
+        const auto next = integers.at(index + 1);
+        constexpr int shift = (sizeof(unsigned int) - 1) * 8;
         const unsigned int nextHighByte = (next >> shift) & 0xFF;
-
-        integers.at(index) = static_cast<int>((current << 8) | nextHighByte);
+        integers.at(index) = (current << 8) | nextHighByte;
       }
     }
   }
 
-  // In this special case, we might have a valid max size (signed) int, or we might have a max size unsigned int that is too big to fit into a signed int because of the sign bit.
+  // Convert back to signed ints only at the very end
   if(integers.size() == 1)
   {
-    const auto unsignedInteger = static_cast<unsigned int>(integers.at(0)); // NOLINT
-
-    if(unsignedInteger <= std::numeric_limits<int>::max())
+    unsigned int uval = integers.at(0);
+    // Check if it fits as positive int OR as INT_MIN
+    if(uval <= static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
+       uval == 0x80000000U)  // Special case for INT_MIN
     {
-      return {static_cast<int>(unsignedInteger)};
+      return {static_cast<int>(uval)};
     }
   }
 
-  return {integers};
+  // Convert to signed ints for bigint representation
+  ints signedInts;
+  for(auto ui : integers) {
+    signedInts.push_back(static_cast<int>(ui));
+  }
+  return {signedInts};
 }
 
 // float
@@ -281,7 +287,7 @@ bytes squeeze_floating(const std::variant<float, double> value)
     }
 
     auto result = bytes();
-    result.insert(result.end(), (char)sizeof(float));
+    result.insert(result.end(), static_cast<char>(sizeof(float)));
 
     bytes floatBytes(sizeof(float));
     std::memcpy(floatBytes.data(), &f, sizeof(float));
@@ -323,7 +329,7 @@ bytes squeeze_floating(const std::variant<float, double> value)
 
 maybe<floating> expand_floating(bytes value)
 {
-  const int length = static_cast<unsigned char>(value.at(0));
+  const unsigned char length = static_cast<unsigned char>(value.at(0));
 
   if(length == 0)
   {
@@ -342,13 +348,13 @@ maybe<floating> expand_floating(bytes value)
   {
     case 4:      
       float f;
-    std::memcpy(&f, floatBytes.data(), length);
-    return {f};
+      std::memcpy(&f, floatBytes.data(), length);
+      return {f};
 
     case 8:
       double d;
-    std::memcpy(&d, floatBytes.data(), length);
-    return {d};
+      std::memcpy(&d, floatBytes.data(), length);
+      return {d};
 
     default:
       return std::nullopt;
@@ -357,7 +363,7 @@ maybe<floating> expand_floating(bytes value)
 
 maybe<floating> expand_conn_floating(Connection& conn)
 {
-  const int length = static_cast<unsigned char>(conn.readOne());
+  const unsigned char length = static_cast<unsigned char>(conn.readOne());
 
   if(length == 0)
   {

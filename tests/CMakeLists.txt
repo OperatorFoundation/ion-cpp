@@ -31,7 +31,7 @@ set(ION_LIB_SOURCE_DIR ${ION_LIB_DIR}/src)
 set(TRANSMISSION_LIB_SOURCE_DIR ${CMAKE_SOURCE_DIR}/libraries/transmission-cpp/src)
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
 
-include_directories(${ION_LIB_SOURCE_DIR} ${TRANSMISSION_LIB_SOURCE_DIR})
+include_directories(${ION_LIB_SOURCE_DIR} ${TRANSMISSION_LIB_SOURCE_DIR} ${ONDA}/src)
 
 add_executable(tests main.cpp
   squeeze_tests/int_tests.cpp
@@ -39,7 +39,7 @@ add_executable(tests main.cpp
 )
 
 # Use the coverage version of the library for tests
-target_link_libraries(tests PRIVATE ion-cpp-coverage Catch2::Catch2WithMain)
+target_link_libraries(tests PRIVATE ion-cpp-coverage onda Catch2::Catch2WithMain)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(tests PRIVATE --coverage -O0 -g)

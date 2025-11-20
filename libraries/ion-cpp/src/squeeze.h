@@ -6,7 +6,6 @@
 
 #include "types.h"
 
-#include <transmission-cpp.h>
 #include "Connection.h"
 
 class Storage;
