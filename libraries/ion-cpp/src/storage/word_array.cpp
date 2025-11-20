@@ -7,6 +7,8 @@
 
 #include "../squeeze.h"
 
+Logger* WordArray::logger = nullptr;
+
 // WordArray
 Storage WordArray::nil()
 {
@@ -61,10 +63,14 @@ bytes WordArray::to_bytes(const Storage &storage)
 
 maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
 {
+  if(logger) logger->debugf("WordArray::from_conn(): objectType: %d", objectType);
+
   varint varsize = expand_conn(conn); // NOLINT
   if(std::holds_alternative<int>(varsize))
   {
     const int size = std::get<int>(varsize);
+
+    if(logger) logger->debugf("WordArray::from_conn(): size: %d", size);
 
     auto i = ints();
 
@@ -75,6 +81,7 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
       {
         int integer = std::get<int>(varinteger);
         i.push_back(integer);
+        if(logger) logger->debugf("WordArray::from_conn(): integer: %d", integer);
       }
       else
       {

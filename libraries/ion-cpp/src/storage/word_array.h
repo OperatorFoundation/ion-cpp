@@ -13,12 +13,14 @@
 
 #include "../types.h"
 
-#include <transmission-cpp.h>
 #include <Connection.h>
+#include <onda.h>
 
 class WordArray
 {
 public:
+  static Logger* logger;
+
   static Storage nil();
   static Storage nil1(const Storage& i);
   static Storage nil2(const Storage& i, const Storage& x);
