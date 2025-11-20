@@ -85,6 +85,7 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
       }
       else
       {
+        if(logger) logger->debug("WordArray::from_conn(): bigint found in list");
         // Varint elements in Word arrays not yet supported
         return std::nullopt;
       }
