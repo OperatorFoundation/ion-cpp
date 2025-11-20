@@ -173,6 +173,8 @@ varint expand_conn(Connection& conn, Logger* logger)
 {
   auto length = static_cast<unsigned char>(conn.readOne());
 
+  if(logger) logger->debugf("expand_conn: length: %d", length);
+
   if(length == 0)
   {
     return {0};
@@ -185,7 +187,11 @@ varint expand_conn(Connection& conn, Logger* logger)
     negative = 1;
   }
 
+  if(logger) { logger->debugf("expand_conn: length (after masking): %d, reading bytes", length); }
+
   const bytes integerBytes = conn.read(length);
+
+  if(logger) { logger->debugf("expand_conn: read %d bytes", integerBytes.size()); }
 
   varint i = expand_int_from_bytes(integerBytes, logger);
 

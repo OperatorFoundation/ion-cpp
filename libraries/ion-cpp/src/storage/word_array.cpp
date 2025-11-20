@@ -76,7 +76,7 @@ maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
 
     for(int y=0; y<size; y++)
     {
-      if(logger) logger->debugf("WordArray::from_conn(): decoding integer %d/%d", y, size);
+      if(logger) logger->debugf("WordArray::from_conn(): decoding integer %d/%d", y+1, size);
       varint varinteger = expand_conn(conn, logger); // NOLINT
       if(std::holds_alternative<int>(varinteger))
       {
