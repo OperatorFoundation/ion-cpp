@@ -171,23 +171,29 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 
 varint expand_conn(Connection& conn, Logger* logger)
 {
-  auto length = static_cast<unsigned char>(conn.readOne());
+  if(logger) logger->debug("expand_conn()");
 
-  if(logger) logger->debugf("expand_conn: length: %d", length);
+  int lengthInt = conn.readOne();
+
+  if(logger) logger->debugf("expand_conn: li 0x%08X", lengthInt);
+
+  auto length = static_cast<unsigned char>(lengthInt);
+
+  if(logger) logger->debugf("expand_conn: luc 0x%02X", length);
 
   if(length == 0)
   {
     return {0};
   }
 
-  int negative = 0;
+  bool negative = false;
   if(length & 0x80)
   {
     length = length & 0x7F;
-    negative = 1;
+    negative = true;
   }
 
-  if(logger) { logger->debugf("expand_conn: length (after masking): %d, reading bytes", length); }
+  if(logger) { logger->debugf("expand_conn: lucp: 0x%02X", length); }
 
   const bytes integerBytes = conn.read(length);
 
