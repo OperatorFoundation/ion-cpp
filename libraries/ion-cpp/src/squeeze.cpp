@@ -150,7 +150,7 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
   const bytes integerData(value.begin() + 1, value.begin() + 1 + integerLength);
   bytes rest(value.begin() + 1 + integerLength, value.end());
 
-  varint i = expand_int_from_bytes(integerData);
+  varint i = expand_int_from_bytes(integerData, logger);
   if(negative)
   {
     if(std::holds_alternative<int>(i))
@@ -187,7 +187,7 @@ varint expand_conn(Connection& conn, Logger* logger)
 
   const bytes integerBytes = conn.read(length);
 
-  varint i = expand_int_from_bytes(integerBytes);
+  varint i = expand_int_from_bytes(integerBytes, logger);
 
   if(std::holds_alternative<int>(i))
   {
