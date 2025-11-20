@@ -63,7 +63,7 @@ bytes WordArray::to_bytes(const Storage &storage)
 
 maybe<Storage> WordArray::from_conn(Connection& conn, const int objectType)
 {
-  varint varsize = expand_conn(conn, nullptr); // NOLINT
+  varint varsize = expand_conn(conn, logger); // NOLINT
   if(std::holds_alternative<int>(varsize))
   {
     const int size = std::get<int>(varsize);
