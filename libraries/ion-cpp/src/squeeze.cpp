@@ -116,7 +116,7 @@ bytes squeeze_varint(const varint &value)
   }
 }
 
-std::tuple<varint, bytes> expand_int(bytes value)
+std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 {
   // If input vector is empty, we have nothing to parse
   if(value.empty())
@@ -169,9 +169,9 @@ std::tuple<varint, bytes> expand_int(bytes value)
   return std::make_tuple(i, rest);
 }
 
-varint expand_conn(Connection& conn)
+varint expand_conn(Connection& conn, Logger* logger)
 {
-  unsigned char length = static_cast<unsigned char>(conn.readOne());
+  auto length = static_cast<unsigned char>(conn.readOne());
 
   if(length == 0)
   {
@@ -216,22 +216,41 @@ varint expand_conn(Connection& conn)
   return i;
 }
 
-varint expand_int_from_bytes(const bytes &bytes)
+varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
 {
-  auto integers = std::vector<unsigned int>();  // Changed to unsigned
+  if(logger) logger->debugf("=== expand_int_from_bytes: %d input bytes ===", bytes.size());
+
+  if(logger) {
+    std::string hexStr = "Input bytes: ";
+    for(auto b : bytes) {
+      char buf[8];
+      snprintf(buf, sizeof(buf), "%02X ", (unsigned char)b);
+      hexStr += buf;
+    }
+    logger->debug(hexStr.c_str());
+  }
+
+  auto integers = std::vector<unsigned int>();
 
   for(int count = 1; count <= bytes.size(); count++)
   {
     if(count % sizeof(unsigned int) == 1)
     {
       integers.insert(integers.begin(), 0);
+      if(logger) logger->debugf("  [count=%d] Added new limb, size now %d", count, integers.size());
     }
 
     for(int index = 0; index < static_cast<int>(integers.size()); index++)
     {
+      unsigned int before = integers.at(index);
+
       if(index == integers.size() - 1)
       {
-        integers.at(index) = (integers.at(index) << 8) | static_cast<unsigned char>(bytes.at(count - 1));
+        unsigned char byte = static_cast<unsigned char>(bytes.at(count - 1));
+        integers.at(index) = (integers.at(index) << 8) | byte;
+
+        if(logger) logger->debugf("  [count=%d, idx=%d LAST] 0x%08X << 8 | 0x%02X = 0x%08X",
+                                  count, index, before, byte, integers.at(index));
       }
       else
       {
@@ -240,7 +259,17 @@ varint expand_int_from_bytes(const bytes &bytes)
         constexpr int shift = (sizeof(unsigned int) - 1) * 8;
         const unsigned int nextHighByte = (next >> shift) & 0xFF;
         integers.at(index) = (current << 8) | nextHighByte;
+
+        if(logger) logger->debugf("  [count=%d, idx=%d] 0x%08X << 8 | 0x%02X = 0x%08X",
+                                  count, index, before, nextHighByte, integers.at(index));
       }
+    }
+  }
+
+  if(logger) {
+    logger->debugf("After reconstruction: %d limbs", integers.size());
+    for(size_t i = 0; i < integers.size(); i++) {
+      logger->debugf("  limb[%d] = %u (0x%08X)", i, integers[i], integers[i]);
     }
   }
 
@@ -248,11 +277,18 @@ varint expand_int_from_bytes(const bytes &bytes)
   if(integers.size() == 1)
   {
     unsigned int uval = integers.at(0);
-    // Check if it fits as positive int OR as INT_MIN
+    if(logger) logger->debugf("Single limb: checking if fits in int (max=%d)", std::numeric_limits<int>::max());
+
     if(uval <= static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
-       uval == 0x80000000U)  // Special case for INT_MIN
+       uval == 0x80000000u)
     {
-      return {static_cast<int>(uval)};
+      int result = static_cast<int>(uval);
+      if(logger) logger->debugf("Returning as int: %d (0x%08X)", result, (unsigned int)result);
+      return {result};
+    }
+    else
+    {
+      if(logger) logger->debugf("Too large for int, returning as bigint");
     }
   }
 
@@ -261,6 +297,9 @@ varint expand_int_from_bytes(const bytes &bytes)
   for(auto ui : integers) {
     signedInts.push_back(static_cast<int>(ui));
   }
+
+  if(logger) logger->debug("Returning as bigint (ints)");
+
   return {signedInts};
 }
 

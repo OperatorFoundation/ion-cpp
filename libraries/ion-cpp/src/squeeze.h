@@ -7,15 +7,16 @@
 #include "types.h"
 
 #include "Connection.h"
+#include <onda.h>
 
 class Storage;
 
 bytes squeeze_int(int value);
 bytes squeeze_bigint(ints value);
 bytes squeeze_varint(const varint &value);
-std::tuple<varint, bytes> expand_int(bytes value);
-varint expand_int_from_bytes(const bytes &bytes);
-varint expand_conn(Connection&);
+std::tuple<varint, bytes> expand_int(bytes value, Logger *logger = nullptr);
+varint expand_int_from_bytes(const bytes &bytes, Logger *logger = nullptr);
+varint expand_conn(Connection&, Logger *logger = nullptr);
 
 bytes squeeze_floating(floating value);
 maybe<floating> expand_floating(bytes value);
