@@ -116,6 +116,10 @@ bytes squeeze_varint(const varint &value)
   }
 }
 
+// expand_int takes bytes directly
+// - 1 byte length (with sign information)
+// - length bytes, the integer data
+// Overhead is 1 byte.
 std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 {
   // If input vector is empty, we have nothing to parse
@@ -169,6 +173,11 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
   return std::make_tuple(i, rest);
 }
 
+// expand_conn reads:
+// - 1 byte, the size of the length
+// - size bytes, the length of the integer (includes sign information)
+// - length bytes, the data for the integer
+// The overhead is 1 + size bytes.
 varint expand_conn(Connection& conn, Logger* logger)
 {
   if(logger) logger->debug("expand_conn()");
@@ -197,7 +206,7 @@ varint expand_conn(Connection& conn, Logger* logger)
 
   const bytes integerBytes = conn.read(length);
 
-  if(logger) { logger->debugf("expand_conn: read %d bytes", integerBytes.size()); }
+  if(logger) { logger->debugf("expand_conn: %d/%d", integerBytes.size(), length); }
 
   varint i = expand_int_from_bytes(integerBytes, logger);
 
@@ -228,6 +237,9 @@ varint expand_conn(Connection& conn, Logger* logger)
   return i;
 }
 
+// Expand int from bytes take bytes directly
+// No sign information, unsigned only
+// No overhead
 varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
 {
   if(logger) logger->debugf("=== expand_int_from_bytes: %d input bytes ===", bytes.size());
@@ -454,6 +466,10 @@ maybe<floating> expand_conn_floating(Connection& conn)
 // ints
 
 // Encode an array of integers in the fewest number of bytes, plus an encoded integer length to tell us how many bytes that is.
+// squeeze_ints writes:
+// - 1 squeeze
+// - size squeezes
+// - The overhead is one squeeze.
 bytes squeeze_ints(const ints &value)
 {
   // The only case where the length can be zero is for the number 0.
