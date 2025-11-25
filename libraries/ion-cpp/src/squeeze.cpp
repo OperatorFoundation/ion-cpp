@@ -201,9 +201,11 @@ varint expand_conn(Connection& conn, Logger* logger)
   const bytes integerBytes = conn.read(length);
 
   if(logger) {
+    logger->debugf("%d", integerBytes.size());
     for(auto c : integerBytes) {
       logger->debugf("%02X", c);
     }
+    logger->debug(".");
   }
 
   varint i = expand_int_from_bytes(integerBytes, nullptr);
