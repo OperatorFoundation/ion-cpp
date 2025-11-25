@@ -7,6 +7,7 @@
 
 #include "squeeze.h"
 #include "types.h"
+#include "storage/storage.h"
 
 // int
 
@@ -200,12 +201,12 @@ varint expand_conn(Connection& conn, Logger* logger)
   const bytes integerBytes = conn.read(length);
 
   if(logger) {
-    for(size_t i = 0; i < integerBytes.size(); i++) {
-      logger->debugf("b[%d]=%02X", i, (unsigned char)integerBytes[i]);
+    for(auto c : integerBytes) {
+      logger->debugf("%02X", c);
     }
   }
 
-  varint i = expand_int_from_bytes(integerBytes, logger);
+  varint i = expand_int_from_bytes(integerBytes, nullptr);
 
   if(std::holds_alternative<int>(i))
   {
