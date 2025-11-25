@@ -200,12 +200,12 @@ varint expand_conn(Connection& conn, Logger* logger)
 
   const bytes integerBytes = conn.read(length);
 
-  if(logger) {
-    logger->debugf("%d", integerBytes.size());
-    for(auto c : integerBytes) {
-      logger->debugf("%02X", c);
+  if(integerBytes.size() == 4)
+  {
+    if(logger)
+    {
+      logger->debugf("%02X %02X %02X %02X", integerBytes[0], integerBytes[1], integerBytes[2], integerBytes[3]);
     }
-    logger->debug(".");
   }
 
   varint i = expand_int_from_bytes(integerBytes, nullptr);
