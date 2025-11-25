@@ -270,7 +270,7 @@ TEST_CASE("squeeze bigint", "[conn]")
   REQUIRE(storageType == StorageType::WORD);
   REQUIRE(objectType == 0);
 
-  maybe<Storage> maybeResult = Word::from_conn(b, 0);
+  maybe<Storage> maybeResult = Word::from_conn(b, 0, nullptr);
   std::cout << "Read from connection, has value: " << (maybeResult != std::nullopt) << std::endl;
 
   REQUIRE(maybeResult != std::nullopt);
@@ -313,7 +313,7 @@ TEST_CASE("squeeze bigint with large value", "[conn]")
   REQUIRE(storageType == StorageType::WORD);
   REQUIRE(objectType == 0);
 
-  maybe<Storage> maybeResult = Word::from_conn(b, 0);
+  maybe<Storage> maybeResult = Word::from_conn(b, 0, nullptr);
   REQUIRE(maybeResult != std::nullopt);
   Storage result = *maybeResult;
   REQUIRE(std::holds_alternative<int>(result.i));
@@ -350,7 +350,7 @@ TEST_CASE("squeeze roundtrip through connection", "[conn]")
     REQUIRE(storageType == StorageType::WORD);
     REQUIRE(objectType == 0);
 
-    maybe<Storage> maybeResult = Word::from_conn(b, 0);
+    maybe<Storage> maybeResult = Word::from_conn(b, 0, nullptr);
     REQUIRE(maybeResult != std::nullopt);
     Storage result = *maybeResult;
     REQUIRE(std::holds_alternative<int>(result.i));

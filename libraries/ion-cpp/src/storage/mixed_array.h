@@ -17,7 +17,7 @@
 #endif
 
 #ifndef NOUN_FROM_CONN
-#define NOUN_FROM_CONN(conn) MixedArray::default_noun_from_conn(conn)
+#define NOUN_FROM_CONN(conn, logger) MixedArray::default_noun_from_conn(conn, logger)
 #endif
 
 #ifndef NOUN_TO_CONN
@@ -30,13 +30,13 @@ public:
   static maybe<Storage> from_bytes(const bytes& data, int o);
   static maybe<bytes> to_bytes(const Storage& storage);
 
-  static maybe<Storage> from_conn(Connection& conn, int objectType);
+  static maybe<Storage> from_conn(Connection& conn, int objectType, Logger* logger);
   static void to_conn(Connection& conn, const Storage& i);
 
   static Storage make(mixed x = {}, int o = NounType::LIST);
 
   static bytes default_noun_to_bytes(const Storage& i);
-  static maybe<Storage> default_noun_from_conn(Connection& conn);
+  static maybe<Storage> default_noun_from_conn(Connection& conn, Logger* logger);
   static void default_noun_to_conn(Connection& conn, const Storage& i);
 };
 

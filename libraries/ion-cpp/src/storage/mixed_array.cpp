@@ -19,6 +19,7 @@
 #include "../squeeze.h"
 
 #include <Connection.h>
+#include <logger.h>
 
 // MixedArray
 // Storage::from_bytes decodes a byte array into a MixedArray object
@@ -53,7 +54,7 @@ maybe<bytes> MixedArray::to_bytes(const Storage& storage) {
   }
 }
 
-maybe<Storage> MixedArray::from_conn(Connection& conn, const int objectType)
+maybe<Storage> MixedArray::from_conn(Connection& conn, const int objectType, Logger* logger)
 {
   varint varsize = expand_conn(conn); // NOLINT
   if (std::holds_alternative<int>(varsize))
@@ -64,7 +65,7 @@ maybe<Storage> MixedArray::from_conn(Connection& conn, const int objectType)
 
     for(int y = 0; y < size; y++)
     {
-      if(maybe<Storage> maybeStorage = NOUN_FROM_CONN(conn))
+      if(maybe<Storage> maybeStorage = NOUN_FROM_CONN(conn, logger))
       {
         i.push_back(*maybeStorage);
       }
@@ -160,7 +161,7 @@ bytes MixedArray::default_noun_to_bytes(const Storage& x)
   }
 }
 
-maybe<Storage> MixedArray::default_noun_from_conn(Connection& conn)
+maybe<Storage> MixedArray::default_noun_from_conn(Connection& conn, Logger* logger)
 {
   const int storageType = static_cast<unsigned char>(conn.readOne());
   const int objectType = static_cast<unsigned char>(conn.readOne());
@@ -168,7 +169,7 @@ maybe<Storage> MixedArray::default_noun_from_conn(Connection& conn)
   switch(storageType)
   {
     case StorageType::WORD:
-      return maybe<Storage>(Word::from_conn(conn, objectType));
+      return maybe<Storage>(Word::from_conn(conn, objectType, logger));
 
     case StorageType::FLOAT:
       return maybe<Storage>(Float::from_conn(conn, objectType));
@@ -180,7 +181,7 @@ maybe<Storage> MixedArray::default_noun_from_conn(Connection& conn)
       return maybe<Storage>(FloatArray::from_conn(conn, objectType));
 
     case StorageType::MIXED_ARRAY:
-      return maybe<Storage>(MixedArray::from_conn(conn, objectType));
+      return maybe<Storage>(MixedArray::from_conn(conn, objectType, logger));
 
     default:
       return std::nullopt;

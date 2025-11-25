@@ -12,6 +12,7 @@
 
 #include <transmission-cpp.h>
 #include <Connection.h>
+#include <logger.h>
 
 class Word
 {
@@ -19,7 +20,7 @@ class Word
     static maybe<Storage> from_bytes(const bytes& data, int o);
     static bytes to_bytes(const Storage& i);
 
-    static maybe<Storage> from_conn(Connection& conn, int objectType);
+    static maybe<Storage> from_conn(Connection& conn, int objectType, Logger* logger);
     static void to_conn(Connection& conn, const Storage& i);
 
     static Storage make(int x, int o = NounType::INTEGER);
