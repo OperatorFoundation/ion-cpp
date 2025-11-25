@@ -179,14 +179,8 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 // The overhead is 1 byte.
 varint expand_conn(Connection& conn, Logger* logger)
 {
-  if(logger) logger->debug("=== expand_conn START ===");
-
   char lengthChar = conn.readOne();
-  if(logger) logger->debugf("expand_conn: lengthChar (raw signed) = %d (0x%02X)",
-                            (int)lengthChar, (unsigned char)lengthChar);
-
   unsigned char length = static_cast<unsigned char>(lengthChar);
-  if(logger) logger->debugf("expand_conn: length (unsigned) = %u (0x%02X)", length, length);
 
   if(length == 0)
   {
@@ -197,13 +191,8 @@ varint expand_conn(Connection& conn, Logger* logger)
   bool negative = false;
   if(length & 0x80)  // Check high bit for sign
   {
-    if(logger) logger->debug("expand_conn: sign bit SET (negative number)");
     length = length & 0x7F;  // Clear sign bit to get actual length
     negative = true;
-  }
-  else
-  {
-    if(logger) logger->debug("expand_conn: sign bit CLEAR (positive number)");
   }
 
   if(logger) logger->debugf("expand_conn: final length = %u, negative = %d", length, negative);
@@ -211,14 +200,9 @@ varint expand_conn(Connection& conn, Logger* logger)
   const bytes integerBytes = conn.read(length);
 
   if(logger) {
-    logger->debugf("expand_conn: read %d bytes from connection", integerBytes.size());
-    std::string hexStr = "expand_conn: raw bytes: ";
     for(size_t i = 0; i < integerBytes.size(); i++) {
-      char buf[16];
-      snprintf(buf, sizeof(buf), "[%d]=%d/0x%02X ", i, (int)integerBytes[i], (unsigned char)integerBytes[i]);
-      hexStr += buf;
+      logger->debugf("b[%d]=%02X", i, (unsigned char)integerBytes[i]);
     }
-    logger->debug(hexStr.c_str());
   }
 
   varint i = expand_int_from_bytes(integerBytes, logger);
@@ -226,17 +210,14 @@ varint expand_conn(Connection& conn, Logger* logger)
   if(std::holds_alternative<int>(i))
   {
     int value = std::get<int>(i);
-    if(logger) logger->debugf("expand_conn: got int from expand_int_from_bytes: %d (0x%08X)",
-                              value, (unsigned int)value);
 
     if(negative)
     {
-      if(logger) logger->debugf("expand_conn: applying negation");
       value = -value;
       i = varint(value);
     }
 
-    if(logger) logger->debugf("expand_conn: RETURNING int: %d (0x%08X)", value, (unsigned int)value);
+    if(logger) logger->debugf("ret: %d", value);
   }
   else
   {
