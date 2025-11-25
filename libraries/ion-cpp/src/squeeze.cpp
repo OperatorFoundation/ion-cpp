@@ -174,21 +174,17 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 }
 
 // expand_conn reads:
-// - 1 byte, the size of the length
-// - size bytes, the length of the integer (includes sign information)
-// - length bytes, the data for the integer
-// The overhead is 1 + size bytes.
+// - 1 byte: length (with sign bit 0x80 for negative numbers)
+// - length bytes: the data for the integer
+// The overhead is 1 byte.
 varint expand_conn(Connection& conn, Logger* logger)
 {
   if(logger) logger->debug("expand_conn()");
 
-  int lengthInt = conn.readOne();
+  char lengthChar = conn.readOne();
+  unsigned char length = static_cast<unsigned char>(lengthChar);
 
-  if(logger) logger->debugf("expand_conn: li 0x%08X", lengthInt);
-
-  auto length = static_cast<unsigned char>(lengthInt);
-
-  if(logger) logger->debugf("expand_conn: luc 0x%02X", length);
+  if(logger) logger->debugf("expand_conn: length byte 0x%02X", length);
 
   if(length == 0)
   {
@@ -196,17 +192,17 @@ varint expand_conn(Connection& conn, Logger* logger)
   }
 
   bool negative = false;
-  if(length & 0x80)
+  if(length & 0x80)  // Check high bit for sign
   {
-    length = length & 0x7F;
+    length = length & 0x7F;  // Clear sign bit to get actual length
     negative = true;
   }
 
-  if(logger) { logger->debugf("expand_conn: lucp: 0x%02X", length); }
+  if(logger) { logger->debugf("expand_conn: actual length: %d, negative: %d", length, negative); }
 
   const bytes integerBytes = conn.read(length);
 
-  if(logger) { logger->debugf("expand_conn: %d/%d", integerBytes.size(), length); }
+  if(logger) { logger->debugf("expand_conn: read %d bytes", integerBytes.size()); }
 
   varint i = expand_int_from_bytes(integerBytes, logger);
 
@@ -254,65 +250,58 @@ varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
     logger->debug(hexStr.c_str());
   }
 
+  // For integers that fit in 4 bytes or less, use simple reconstruction
+  if(bytes.size() <= sizeof(unsigned int))
+  {
+    unsigned int result = 0;
+    for(size_t i = 0; i < bytes.size(); i++)
+    {
+      unsigned char byte = static_cast<unsigned char>(bytes[i]);
+      result = (result << 8) | byte;
+      if(logger) logger->debugf("  byte[%d]: 0x%02X, result so far: 0x%08X", i, byte, result);
+    }
+
+    if(logger) logger->debugf("Final unsigned value: %u (0x%08X)", result, result);
+
+    // Check if it fits in a signed int
+    if(result <= static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
+       result == 0x80000000u)  // Special case for INT_MIN
+    {
+      int signedResult = static_cast<int>(result);
+      if(logger) logger->debugf("Returning as int: %d", signedResult);
+      return {signedResult};
+    }
+    else
+    {
+      if(logger) logger->debugf("Too large for int, returning as bigint");
+      // Fall through to bigint handling
+    }
+  }
+
+  // For larger integers or those that don't fit in signed int, use multi-limb representation
   auto integers = std::vector<unsigned int>();
 
-  for(int count = 1; count <= bytes.size(); count++)
+  // Process bytes in chunks of sizeof(unsigned int)
+  size_t numLimbs = (bytes.size() + sizeof(unsigned int) - 1) / sizeof(unsigned int);
+  integers.resize(numLimbs, 0);
+
+  if(logger) logger->debugf("Using %d limbs for %d bytes", numLimbs, bytes.size());
+
+  // Fill limbs from most significant to least significant
+  for(size_t i = 0; i < bytes.size(); i++)
   {
-    if(count % sizeof(unsigned int) == 1)
-    {
-      integers.insert(integers.begin(), 0);
-      if(logger) logger->debugf("  [count=%d] Added new limb, size now %d", count, integers.size());
-    }
+    unsigned char byte = static_cast<unsigned char>(bytes[i]);
+    size_t limbIndex = i / sizeof(unsigned int);
+    integers[limbIndex] = (integers[limbIndex] << 8) | byte;
 
-    for(int index = 0; index < static_cast<int>(integers.size()); index++)
-    {
-      unsigned int before = integers.at(index);
-
-      if(index == integers.size() - 1)
-      {
-        unsigned char byte = static_cast<unsigned char>(bytes.at(count - 1));
-        integers.at(index) = (integers.at(index) << 8) | byte;
-
-        if(logger) logger->debugf("  [count=%d, idx=%d LAST] 0x%08X << 8 | 0x%02X = 0x%08X",
-                                  count, index, before, byte, integers.at(index));
-      }
-      else
-      {
-        const auto current = integers.at(index);
-        const auto next = integers.at(index + 1);
-        constexpr int shift = (sizeof(unsigned int) - 1) * 8;
-        const unsigned int nextHighByte = (next >> shift) & 0xFF;
-        integers.at(index) = (current << 8) | nextHighByte;
-
-        if(logger) logger->debugf("  [count=%d, idx=%d] 0x%08X << 8 | 0x%02X = 0x%08X",
-                                  count, index, before, nextHighByte, integers.at(index));
-      }
-    }
+    if(logger) logger->debugf("  byte[%d]=0x%02X -> limb[%d]=0x%08X",
+                              i, byte, limbIndex, integers[limbIndex]);
   }
 
   if(logger) {
     logger->debugf("After reconstruction: %d limbs", integers.size());
     for(size_t i = 0; i < integers.size(); i++) {
       logger->debugf("  limb[%d] = %u (0x%08X)", i, integers[i], integers[i]);
-    }
-  }
-
-  // Convert back to signed ints only at the very end
-  if(integers.size() == 1)
-  {
-    unsigned int uval = integers.at(0);
-    if(logger) logger->debugf("Single limb: checking if fits in int (max=%d)", std::numeric_limits<int>::max());
-
-    if(uval <= static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
-       uval == 0x80000000u)
-    {
-      int result = static_cast<int>(uval);
-      if(logger) logger->debugf("Returning as int: %d (0x%08X)", result, (unsigned int)result);
-      return {result};
-    }
-    else
-    {
-      if(logger) logger->debugf("Too large for int, returning as bigint");
     }
   }
 
@@ -323,7 +312,6 @@ varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
   }
 
   if(logger) logger->debug("Returning as bigint (ints)");
-
   return {signedInts};
 }
 

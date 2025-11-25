@@ -52,6 +52,8 @@ bytes Word::to_bytes(const Storage& i)
 
 maybe<Storage> Word::from_conn(Connection& conn, const int objectType)
 {
+  // Never include type in from_conn implementation
+
   varint varinteger = expand_conn(conn); // NOLINT
 
   if(std::holds_alternative<int>(varinteger))
