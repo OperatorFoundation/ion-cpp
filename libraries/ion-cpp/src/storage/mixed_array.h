@@ -21,7 +21,7 @@
 #endif
 
 #ifndef NOUN_TO_CONN
-#define NOUN_TO_CONN(conn, i) MixedArray::default_noun_to_conn(conn, i)
+#define NOUN_TO_CONN(conn, i, logger) MixedArray::default_noun_to_conn(conn, i, logger)
 #endif
 
 class MixedArray
@@ -37,7 +37,7 @@ public:
 
   static bytes default_noun_to_bytes(const Storage& i);
   static maybe<Storage> default_noun_from_conn(Connection& conn, Logger* logger);
-  static void default_noun_to_conn(Connection& conn, const Storage& i);
+  static void default_noun_to_conn(Connection& conn, const Storage& i, Logger* logger);
 };
 
 #endif //MIXED_ARRAY_H

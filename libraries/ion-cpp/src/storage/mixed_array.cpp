@@ -102,7 +102,7 @@ void MixedArray::to_conn(Connection& conn, const Storage& i)
 
     for (const Storage& y : ms)
     {
-      NOUN_TO_CONN(conn, y);
+      NOUN_TO_CONN(conn, y, nullptr);
     }
   }
 }
@@ -188,7 +188,7 @@ maybe<Storage> MixedArray::default_noun_from_conn(Connection& conn, Logger* logg
   }
 }
 
-void MixedArray::default_noun_to_conn(Connection& conn, const Storage& x)
+void MixedArray::default_noun_to_conn(Connection& conn, const Storage& x, Logger* logger)
 {
   switch(x.t)
   {
