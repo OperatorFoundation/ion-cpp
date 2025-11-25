@@ -179,44 +179,69 @@ std::tuple<varint, bytes> expand_int(bytes value, Logger* logger)
 // The overhead is 1 byte.
 varint expand_conn(Connection& conn, Logger* logger)
 {
-  if(logger) logger->debug("expand_conn()");
+  if(logger) logger->debug("=== expand_conn START ===");
 
   char lengthChar = conn.readOne();
-  unsigned char length = static_cast<unsigned char>(lengthChar);
+  if(logger) logger->debugf("expand_conn: lengthChar (raw signed) = %d (0x%02X)",
+                            (int)lengthChar, (unsigned char)lengthChar);
 
-  if(logger) logger->debugf("expand_conn: length byte 0x%02X", length);
+  unsigned char length = static_cast<unsigned char>(lengthChar);
+  if(logger) logger->debugf("expand_conn: length (unsigned) = %u (0x%02X)", length, length);
 
   if(length == 0)
   {
+    if(logger) logger->debug("expand_conn: length is 0, returning 0");
     return {0};
   }
 
   bool negative = false;
   if(length & 0x80)  // Check high bit for sign
   {
+    if(logger) logger->debug("expand_conn: sign bit SET (negative number)");
     length = length & 0x7F;  // Clear sign bit to get actual length
     negative = true;
   }
+  else
+  {
+    if(logger) logger->debug("expand_conn: sign bit CLEAR (positive number)");
+  }
 
-  if(logger) { logger->debugf("expand_conn: actual length: %d, negative: %d", length, negative); }
+  if(logger) logger->debugf("expand_conn: final length = %u, negative = %d", length, negative);
 
   const bytes integerBytes = conn.read(length);
 
-  if(logger) { logger->debugf("expand_conn: read %d bytes", integerBytes.size()); }
+  if(logger) {
+    logger->debugf("expand_conn: read %d bytes from connection", integerBytes.size());
+    std::string hexStr = "expand_conn: raw bytes: ";
+    for(size_t i = 0; i < integerBytes.size(); i++) {
+      char buf[16];
+      snprintf(buf, sizeof(buf), "[%d]=%d/0x%02X ", i, (int)integerBytes[i], (unsigned char)integerBytes[i]);
+      hexStr += buf;
+    }
+    logger->debug(hexStr.c_str());
+  }
 
   varint i = expand_int_from_bytes(integerBytes, logger);
 
   if(std::holds_alternative<int>(i))
   {
+    int value = std::get<int>(i);
+    if(logger) logger->debugf("expand_conn: got int from expand_int_from_bytes: %d (0x%08X)",
+                              value, (unsigned int)value);
+
     if(negative)
     {
-      const int integer = std::get<int>(i);
-      i = varint(-integer);
+      if(logger) logger->debugf("expand_conn: applying negation");
+      value = -value;
+      i = varint(value);
     }
+
+    if(logger) logger->debugf("expand_conn: RETURNING int: %d (0x%08X)", value, (unsigned int)value);
   }
   else
   {
     auto integers = std::get<ints>(i);
+    if(logger) logger->debugf("expand_conn: got bigint with %d limbs", integers.size());
 
     if(negative)
     {
@@ -228,8 +253,10 @@ varint expand_conn(Connection& conn, Logger* logger)
     }
 
     i = varint(integers);
+    if(logger) logger->debug("expand_conn: RETURNING bigint");
   }
 
+  if(logger) logger->debug("=== expand_conn END ===");
   return i;
 }
 
@@ -241,10 +268,18 @@ varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
   if(logger) logger->debugf("=== expand_int_from_bytes: %d input bytes ===", bytes.size());
 
   if(logger) {
-    std::string hexStr = "Input bytes: ";
-    for(auto b : bytes) {
-      char buf[8];
-      snprintf(buf, sizeof(buf), "%02X ", (unsigned char)b);
+    std::string hexStr = "Input bytes (unsigned view): ";
+    for(size_t i = 0; i < bytes.size(); i++) {
+      char buf[16];
+      snprintf(buf, sizeof(buf), "[%d]=0x%02X ", i, (unsigned char)bytes[i]);
+      hexStr += buf;
+    }
+    logger->debug(hexStr.c_str());
+
+    hexStr = "Input bytes (signed view): ";
+    for(size_t i = 0; i < bytes.size(); i++) {
+      char buf[16];
+      snprintf(buf, sizeof(buf), "[%d]=%d ", i, (int)bytes[i]);
       hexStr += buf;
     }
     logger->debug(hexStr.c_str());
@@ -257,8 +292,10 @@ varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
     for(size_t i = 0; i < bytes.size(); i++)
     {
       unsigned char byte = static_cast<unsigned char>(bytes[i]);
+      unsigned int before = result;
       result = (result << 8) | byte;
-      if(logger) logger->debugf("  byte[%d]: 0x%02X, result so far: 0x%08X", i, byte, result);
+      if(logger) logger->debugf("  [%d]: byte=0x%02X, before=0x%08X, after shift=(0x%08X << 8)=0x%08X, after OR=0x%08X",
+                                i, byte, before, before, (before << 8), result);
     }
 
     if(logger) logger->debugf("Final unsigned value: %u (0x%08X)", result, result);
@@ -268,12 +305,14 @@ varint expand_int_from_bytes(const bytes &bytes, Logger *logger)
        result == 0x80000000u)  // Special case for INT_MIN
     {
       int signedResult = static_cast<int>(result);
-      if(logger) logger->debugf("Returning as int: %d", signedResult);
+      if(logger) logger->debugf("Fits in signed int, returning: %d (0x%08X as unsigned)",
+                                signedResult, result);
       return {signedResult};
     }
     else
     {
-      if(logger) logger->debugf("Too large for int, returning as bigint");
+      if(logger) logger->debugf("Too large for signed int (max=%d, 0x%08X), falling through to bigint",
+                                std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
       // Fall through to bigint handling
     }
   }
