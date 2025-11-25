@@ -204,7 +204,8 @@ varint expand_conn(Connection& conn, Logger* logger)
   {
     if(logger)
     {
-      logger->debugf("%02X %02X %02X %02X", integerBytes[0], integerBytes[1], integerBytes[2], integerBytes[3]);
+      logger->debugf("%02X %02X", integerBytes[0], integerBytes[1]);
+      logger->debugf("%02X %02X", integerBytes[2], integerBytes[3]);
     }
   }
 
