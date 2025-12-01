@@ -31,12 +31,14 @@ class NounType
     static constexpr int LIST = 4;
     static constexpr int DICTIONARY = 5;
     static constexpr int BUILTIN_SYMBOL = 6;
+    static constexpr int BUILTIN_NILAD = 36;
     static constexpr int BUILTIN_MONAD = 7;
     static constexpr int BUILTIN_DYAD = 8;
     static constexpr int BUILTIN_TRIAD = 9;
     static constexpr int MONADIC_ADVERB = 10;
     static constexpr int DYADIC_ADVERB = 11;
     static constexpr int USER_SYMBOL = 12;
+    static constexpr int USER_NILAD = 37;
     static constexpr int USER_MONAD = 13;
     static constexpr int USER_DYAD = 14;
     static constexpr int USER_TRIAD = 15;
@@ -57,6 +59,7 @@ class NounType
     static constexpr int NILADIC_EFFECT = 30;
     static constexpr int MONADIC_EFFECT = 31;
     static constexpr int DYADIC_EFFECT = 32;
+    static constexpr int TRAIDIC_EFFECT = 35;
     static constexpr int CONJUNCTION = 33;
     static constexpr int DATA = 34;
     static constexpr int ANY = 255;
