@@ -12,7 +12,5 @@ add_executable(ion-stdio
   IostreamConnection.cpp
   IostreamStorageConnection.cpp
   main.cpp
-  ../lib/TransmissionArduino/libraries/transmission-cpp/src/Pipe.cpp
-  ../lib/TransmissionArduino/libraries/transmission-cpp/src/Pipe.h
 )
 target_link_libraries(ion-stdio ion-cpp)

@@ -26,8 +26,7 @@ message(STATUS "Fetching Catch2...")
 FetchContent_MakeAvailable(Catch2)
 
 set(ION_CPP_LIB_TEST_DIR ${CMAKE_SOURCE_DIR}/tests)
-set(ION_LIB_DIR ${CMAKE_SOURCE_DIR}/libraries/ion-cpp)
-set(ION_LIB_SOURCE_DIR ${ION_LIB_DIR}/src)
+set(ION_LIB_SOURCE_DIR ${ION}/src)
 set(TRANSMISSION_LIB_SOURCE_DIR ${CMAKE_SOURCE_DIR}/libraries/transmission-cpp/src)
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
 
