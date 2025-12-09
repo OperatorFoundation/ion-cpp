@@ -62,6 +62,7 @@ class NounType
     static constexpr int TRIADIC_EFFECT = 35;
     static constexpr int CONJUNCTION = 33;
     static constexpr int DATA = 34;
+    static constexpr int SYMBOL_DEFINITION = 38;
     static constexpr int ANY = 255;
 };
 
