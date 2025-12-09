@@ -65,6 +65,7 @@ class NounType
     static constexpr int DATA = 38;
     static constexpr int SYMBOL_DEFINITION = 39;
     static constexpr int BINDINGS = 40;
+    static constexpr int RANGE = 41;
     static constexpr int ANY = 255;
 };
 
