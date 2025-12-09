@@ -37,6 +37,7 @@ class NounType
     static constexpr int BUILTIN_TRIAD = 9;
     static constexpr int MONADIC_ADVERB = 10;
     static constexpr int DYADIC_ADVERB = 11;
+    static constexpr int TRIADIC_ADVERB = 39;
     static constexpr int USER_SYMBOL = 12;
     static constexpr int USER_NILAD = 37;
     static constexpr int USER_MONAD = 13;
