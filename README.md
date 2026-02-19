@@ -1,4 +1,4 @@
-This repository has moved to https://codeberg.org/OperatorFoundation/ion-cpp
+This repository has moved to https://codeberg.org/OperatorFoundation/ion
 
 [TOC]
 
